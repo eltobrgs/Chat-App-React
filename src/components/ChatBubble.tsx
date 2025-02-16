@@ -1,3 +1,6 @@
+import { useState, useRef, useEffect } from 'react';
+import Swal from 'sweetalert2';
+
 interface Mensagem {
   id: number;
   texto?: string;
@@ -11,9 +14,103 @@ interface Mensagem {
 
 interface ChatBubbleProps {
   mensagem: Mensagem;
+  onDelete?: (id: number) => void;
+  onEdit?: (id: number, novoTexto: string) => void;
 }
 
-export default function ChatBubble({ mensagem }: ChatBubbleProps) {
+export default function ChatBubble({ mensagem, onDelete, onEdit }: ChatBubbleProps) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedText, setEditedText] = useState(mensagem.texto || '');
+  const [showActions, setShowActions] = useState(false);
+  const editInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isEditing && editInputRef.current) {
+      editInputRef.current.focus();
+    }
+  }, [isEditing]);
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setEditedText(mensagem.texto || '');
+    setShowActions(false);
+  };
+
+  const handleSaveEdit = () => {
+    if (editedText.trim() && onEdit) {
+      onEdit(mensagem.id, editedText.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      setIsEditing(false);
+      setEditedText(mensagem.texto || '');
+    }
+  };
+
+  const handleDelete = async () => {
+    const result = await Swal.fire({
+      title: 'Tem certeza?',
+      text: 'Esta ação não pode ser desfeita',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, deletar',
+      cancelButtonText: 'Cancelar',
+      confirmButtonColor: '#dc2626',
+      cancelButtonColor: '#6b7280',
+      background: '#ffffff',
+      customClass: {
+        popup: 'rounded-lg',
+        title: 'text-gray-800 font-semibold',
+        htmlContainer: 'text-gray-600'
+      }
+    });
+
+    if (result.isConfirmed && onDelete) {
+      onDelete(mensagem.id);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (mensagem.texto) {
+      await navigator.clipboard.writeText(mensagem.texto);
+      setShowActions(false);
+      
+      // Feedback visual
+      const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 2000,
+        timerProgressBar: true
+      });
+
+      await Toast.fire({
+        icon: 'success',
+        title: 'Mensagem copiada!'
+      });
+    }
+  };
+
+  const handleMessageClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Evita propagação do clique
+    setShowActions(!showActions);
+  };
+
+  // Fecha o menu de ações quando clicar fora
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowActions(false);
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
+
   const renderStatus = () => {
     if (!mensagem.enviada || !mensagem.status) return null;
 
@@ -33,11 +130,66 @@ export default function ChatBubble({ mensagem }: ChatBubbleProps) {
   };
 
   const renderTexto = () => (
-    <div className="p-3">
-      <p className="text-gray-700 text-[15px] leading-relaxed">{mensagem.texto}</p>
-      <div className="flex items-center justify-end gap-1.5 mt-1.5">
-        <span className="text-[11px] text-gray-500 font-medium">{mensagem.horario}</span>
-        {renderStatus()}
+    <div className="relative">
+      {/* Ícones de ação */}
+      {mensagem.enviada && showActions && !isEditing && (
+        <div 
+          className="absolute -top-12 right-0 flex items-center gap-1 bg-white rounded-lg shadow-md p-1 animate-fade-in-down"
+          onClick={e => e.stopPropagation()}
+        >
+          <button 
+            onClick={handleCopy}
+            className="p-2 rounded-full text-blue-600 hover:bg-blue-50 hover:text-blue-700 hover:scale-110 transition-all duration-200"
+            title="Copiar mensagem"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M7 9a2 2 0 012-2h6a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2V9z" />
+              <path d="M5 3a2 2 0 00-2 2v6a2 2 0 002 2V5h8a2 2 0 00-2-2H5z" />
+            </svg>
+          </button>
+          <button 
+            onClick={handleEdit}
+            className="p-2 rounded-full text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 hover:scale-110 transition-all duration-200"
+            title="Editar mensagem"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+            </svg>
+          </button>
+          <button 
+            onClick={handleDelete}
+            className="p-2 rounded-full text-red-600 hover:bg-red-50 hover:text-red-700 hover:scale-110 transition-all duration-200"
+            title="Deletar mensagem"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* Conteúdo da mensagem */}
+      <div 
+        className="p-3 cursor-pointer"
+        onClick={handleMessageClick}
+      >
+        {isEditing ? (
+          <input
+            ref={editInputRef}
+            type="text"
+            value={editedText}
+            onChange={(e) => setEditedText(e.target.value)}
+            onKeyDown={handleKeyPress}
+            onBlur={handleSaveEdit}
+            className="w-full bg-transparent text-gray-700 text-[15px] leading-relaxed focus:outline-none focus:ring-2 focus:ring-emerald-500 rounded px-2 py-1"
+          />
+        ) : (
+          <p className="text-gray-700 text-[15px] leading-relaxed">{mensagem.texto}</p>
+        )}
+        <div className="flex items-center justify-end gap-1.5 mt-1.5">
+          <span className="text-[11px] text-gray-500 font-medium">{mensagem.horario}</span>
+          {renderStatus()}
+        </div>
       </div>
     </div>
   );
@@ -79,9 +231,9 @@ export default function ChatBubble({ mensagem }: ChatBubbleProps) {
   );
 
   return (
-    <div className={`flex ${mensagem.enviada ? 'justify-end' : 'justify-start'}`}>
+    <div className={`flex ${mensagem.enviada ? 'justify-end' : 'justify-start'} group/message`}>
       <div
-        className={`max-w-[85%] md:max-w-[65%] rounded-2xl shadow-sm ${
+        className={`max-w-[85%] md:max-w-[65%] rounded-2xl shadow-sm hover:shadow-md transition-shadow duration-200 ${
           mensagem.enviada
             ? 'bg-emerald-50 rounded-tr-md'
             : 'bg-white rounded-tl-md'

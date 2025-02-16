@@ -1,6 +1,5 @@
 import { useAuthContext } from '../hooks/useAuthContext';
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import Swal from 'sweetalert2';
 
@@ -105,7 +104,6 @@ export default function InfoUsuario() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const navigate = useNavigate();
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
@@ -301,9 +299,6 @@ export default function InfoUsuario() {
       });
 
       if (result.isConfirmed) {
-        // Mostra loading
-        Swal.showLoading();
-
         // Limpa todos os tokens do localStorage
         Object.keys(localStorage).forEach(key => {
           if (key.startsWith('sb-')) {
@@ -311,27 +306,17 @@ export default function InfoUsuario() {
           }
         });
 
-        // Limpa a sessão do Supabase
-        const { error } = await supabase.auth.signOut();
-        if (error) throw error;
-
-        // Limpa o estado do usuário
-        setUser(null);
-
         // Limpa a sessão do navegador
         sessionStorage.clear();
 
-        // Fecha o loading
-        await Swal.close();
+        // Faz o signOut do Supabase
+        await supabase.auth.signOut();
 
-        // Redireciona para a página de login
-        navigate('/', { replace: true });
+        // Atualiza a página para forçar o redirecionamento
+        window.location.href = '/';
       }
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
-      
-      // Fecha o loading em caso de erro
-      await Swal.close();
       
       // Mostra mensagem de erro
       await Swal.fire({

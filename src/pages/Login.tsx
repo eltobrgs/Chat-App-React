@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react'
+import { useState, FormEvent, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import crudRightImage from '../assets/images/crud-right-image.png'
@@ -13,7 +13,7 @@ interface FormData {
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true)
   const navigate = useNavigate()
-  const { signIn, signUp, error, loading } = useAuth()
+  const { signIn, signUp, error, loading, user } = useAuth()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
@@ -25,6 +25,13 @@ export default function Login() {
   })
 
   const [validationErrors, setValidationErrors] = useState<Partial<FormData>>({})
+
+  // Redireciona para o chat se já estiver autenticado
+  useEffect(() => {
+    if (user) {
+      navigate('/chat', { replace: true })
+    }
+  }, [user, navigate])
 
   const validateForm = (): boolean => {
     const errors: Partial<FormData> = {}

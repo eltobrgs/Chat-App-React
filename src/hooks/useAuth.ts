@@ -19,74 +19,66 @@ interface UseAuthReturn {
 
 export function useAuth(): UseAuthReturn {
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<AuthError | null>(null)
 
+  // Função para verificar e validar a sessão
+  const checkSession = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (session?.user?.id) {
+        // Verifica se o token ainda é válido
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single()
+
+        if (profileError) {
+          throw profileError
+        }
+
+        if (profile) {
+          setUser(profile)
+          return true
+        }
+      }
+      return false
+    } catch (error) {
+      console.error('Erro ao verificar sessão:', error)
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Efeito para verificar a sessão ao montar o componente
   useEffect(() => {
-    let mounted = true
-    setLoading(true)
+    checkSession()
 
-    const checkUser = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        
-        if (!mounted) return
-
-        if (session?.user?.email_confirmed_at) {
+    // Listener para mudanças no estado de autenticação
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (session?.user?.id) {
           const { data: profile } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
             .single()
 
-          if (mounted) {
+          if (profile) {
             setUser(profile)
           }
-        } else if (mounted) {
-          setUser(null)
         }
-      } catch (error) {
-        console.error('Erro ao verificar usuário:', error)
-        if (mounted) {
-          setUser(null)
-        }
-      } finally {
-        if (mounted) {
-          setLoading(false)
-        }
-      }
-    }
-
-    checkUser()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted) return
-
-      if (event === 'SIGNED_OUT') {
+      } else if (event === 'SIGNED_OUT') {
         setUser(null)
-        setLoading(false)
-        return
+        localStorage.removeItem('supabase.auth.token')
       }
-
-      if (session?.user?.email_confirmed_at) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single()
-
-        if (mounted) {
-          setUser(profile)
-        }
-      } else if (mounted) {
-        setUser(null)
-      }
-      
       setLoading(false)
     })
 
     return () => {
-      mounted = false
       subscription.unsubscribe()
     }
   }, [])
@@ -182,6 +174,12 @@ export function useAuth(): UseAuthReturn {
         return { success: false }
       }
 
+      // Atualiza o token no localStorage
+      const session = await supabase.auth.getSession()
+      if (session.data.session) {
+        localStorage.setItem('supabase.auth.token', JSON.stringify(session.data.session))
+      }
+
       await Swal.fire({
         title: 'Login bem-sucedido!',
         text: `Bem-vindo! Login realizado com ${email}`,
@@ -219,21 +217,11 @@ export function useAuth(): UseAuthReturn {
       setLoading(true)
       setError(null)
 
-      // Remove a sessão do Supabase
       const { error: signOutError } = await supabase.auth.signOut()
       if (signOutError) throw signOutError
 
-      // Limpa o estado local
       setUser(null)
-
-      // Remove todos os tokens do Supabase do localStorage
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('sb-')) {
-          localStorage.removeItem(key)
-        }
-      })
-
-      // Limpa a sessão
+      localStorage.removeItem('supabase.auth.token')
       sessionStorage.clear()
 
     } catch (err) {

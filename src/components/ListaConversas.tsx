@@ -3,10 +3,10 @@ import ConversaItem from './ConversaItem';
 import InfoUsuario from './InfoUsuario';
 
 interface ListaConversasProps {
-  onConversaSelect: () => void;
+  onConversaSelect: (conversa: Conversa) => void;
 }
 
-interface Conversa {
+export interface Conversa {
   id: number;
   nome: string;
   ultimaMensagem: string;
@@ -35,43 +35,17 @@ const conversas: Conversa[] = [
     foto: "https://i.pravatar.cc/150?img=2",
     naoLidas: 3
   },
-  {
-    id: 3,
-    nome: "Maria Oliveira",
-    ultimaMensagem: "O projeto está quase pronto!",
-    horario: "08:45",
-    foto: "https://i.pravatar.cc/150?img=3",
-    online: true,
-    status: 'online'
-  },
-  {
-    id: 4,
-    nome: "Pedro Costa",
-    ultimaMensagem: "Obrigado pela ajuda!",
-    horario: "Ontem",
-    foto: "https://i.pravatar.cc/150?img=4"
-  },
-  {
-    id: 5,
-    nome: "Ana Beatriz",
-    ultimaMensagem: "Enviou um áudio",
-    horario: "Seg",
-    foto: "https://i.pravatar.cc/150?img=5",
-    online: true
-  },
-  {
-    id: 6,
-    nome: "Carlos Eduardo",
-    ultimaMensagem: "Enviou uma foto",
-    horario: "Dom",
-    foto: "https://i.pravatar.cc/150?img=6"
-  }
+  
 ];
 
 export default function ListaConversas({ onConversaSelect }: ListaConversasProps) {
   const handleNewChat = () => {
     // Implementação futura
     console.log('Novo chat');
+  };
+
+  const handleConversaSelect = (conversa: Conversa) => {
+    onConversaSelect(conversa);
   };
 
   return (
@@ -98,7 +72,7 @@ export default function ListaConversas({ onConversaSelect }: ListaConversasProps
             conversa={conversa}
             isFirst={index === 0}
             isLast={index === conversas.length - 1}
-            onClick={onConversaSelect}
+            onClick={() => handleConversaSelect(conversa)}
           />
         ))}
       </div>
