@@ -119,7 +119,7 @@ export default function ChatContent({ onVoltar }: ChatContentProps) {
       </div>
 
       {/* Área de Mensagens */}
-      <div className="relative flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="relative flex-1 overflow-y-auto p-4">
         <div 
           className="absolute inset-0 opacity-5"
           style={{
@@ -127,7 +127,7 @@ export default function ChatContent({ onVoltar }: ChatContentProps) {
             backgroundSize: "400px"
           }}
         />
-        <div className="relative z-10">
+        <div className="relative z-10 space-y-6">
           {mensagens.map((mensagem) => (
             <ChatBubble key={mensagem.id} mensagem={mensagem} />
           ))}
