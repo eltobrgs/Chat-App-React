@@ -14,6 +14,7 @@ interface UseAuthReturn {
   signUp: (email: string, password: string, userData: Partial<User>) => Promise<{ success: boolean, shouldResetForm: boolean }>
   signIn: (email: string, password: string) => Promise<{ success: boolean }>
   signOut: () => Promise<void>
+  setUser: (user: User | null) => void
 }
 
 export function useAuth(): UseAuthReturn {
@@ -23,6 +24,7 @@ export function useAuth(): UseAuthReturn {
 
   useEffect(() => {
     let mounted = true
+    setLoading(true)
 
     const checkUser = async () => {
       try {
@@ -45,6 +47,13 @@ export function useAuth(): UseAuthReturn {
         }
       } catch (error) {
         console.error('Erro ao verificar usuário:', error)
+        if (mounted) {
+          setUser(null)
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false)
+        }
       }
     }
 
@@ -52,6 +61,12 @@ export function useAuth(): UseAuthReturn {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return
+
+      if (event === 'SIGNED_OUT') {
+        setUser(null)
+        setLoading(false)
+        return
+      }
 
       if (session?.user?.email_confirmed_at) {
         const { data: profile } = await supabase
@@ -66,6 +81,8 @@ export function useAuth(): UseAuthReturn {
       } else if (mounted) {
         setUser(null)
       }
+      
+      setLoading(false)
     })
 
     return () => {
@@ -202,8 +219,23 @@ export function useAuth(): UseAuthReturn {
       setLoading(true)
       setError(null)
 
+      // Remove a sessão do Supabase
       const { error: signOutError } = await supabase.auth.signOut()
       if (signOutError) throw signOutError
+
+      // Limpa o estado local
+      setUser(null)
+
+      // Remove todos os tokens do Supabase do localStorage
+      Object.keys(localStorage).forEach(key => {
+        if (key.startsWith('sb-')) {
+          localStorage.removeItem(key)
+        }
+      })
+
+      // Limpa a sessão
+      sessionStorage.clear()
+
     } catch (err) {
       setError({ message: err instanceof Error ? err.message : 'Erro ao fazer logout' })
       await Swal.fire({
@@ -224,6 +256,7 @@ export function useAuth(): UseAuthReturn {
     error,
     signUp,
     signIn,
-    signOut
+    signOut,
+    setUser
   }
 } 

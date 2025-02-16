@@ -1,5 +1,6 @@
 import FloatingButton from './FloatingButton';
 import ConversaItem from './ConversaItem';
+import InfoUsuario from './InfoUsuario';
 
 interface ListaConversasProps {
   onConversaSelect: () => void;
@@ -73,35 +74,10 @@ export default function ListaConversas({ onConversaSelect }: ListaConversasProps
     console.log('Novo chat');
   };
 
-  const handleProfileClick = () => {
-    // Implementação futura
-    console.log('Ir para perfil');
-  };
-
   return (
     <div className="h-full flex flex-col bg-white border-r border-gray-200 rounded-lg overflow-hidden relative">
       {/* Cabeçalho */}
-      <div className="p-2.5 bg-[#075E54] flex items-center justify-between rounded-t-lg">
-        <div className="flex items-center gap-3 flex-1">
-          <img 
-            src="https://i.pravatar.cc/150?img=12" 
-            alt="Perfil" 
-            className="w-10 h-10 rounded-full border border-gray-200"
-          />
-          <div className="flex-1">
-            <h2 className="text-white font-semibold">Elton Borges</h2>
-            <p className="text-emerald-100 text-sm">Online</p>
-          </div>
-          <button 
-            onClick={handleProfileClick}
-            className="p-2 hover:bg-[#054c44] rounded-full transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-      </div>
+      <InfoUsuario />
 
       {/* Barra de Pesquisa */}
       <div className="px-4 py-2 bg-white border-b border-gray-200 sticky top-0 z-10">

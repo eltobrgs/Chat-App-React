@@ -8,6 +8,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<{ success: boolean }>
   signUp: (email: string, password: string, userData: Partial<User>) => Promise<{ success: boolean }>
   signOut: () => Promise<void>
+  setUser: (user: User | null) => void
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined) 
